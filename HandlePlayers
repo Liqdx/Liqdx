@@ -1,0 +1,603 @@
+---------------------------
+--   V A R I A B L E S   --
+---------------------------
+
+-- ROBLOX Services
+local players = game:GetService('Players')
+local serverScriptService = game:GetService('ServerScriptService')
+local httpService = game:GetService('HttpService')
+local groupService = game:GetService('GroupService')
+local serverStorage = game:GetService('ServerStorage')
+local replicatedStorage = game:GetService('ReplicatedStorage')
+local teams = game:GetService('Teams')
+local marketPlaceService = game:GetService('MarketplaceService')
+
+-- ServerScriptService
+local serverAPI = serverScriptService:WaitForChild('ServerAPI')
+local dataStoreAPI = require(serverAPI:WaitForChild('DataStoreAPI'))
+local uniformAPI = require(serverAPI:WaitForChild('UniformAPI'))
+
+-- ServerStorage
+local serverEvents = serverStorage:WaitForChild('ServerEvents')
+local storageTools = serverStorage:WaitForChild('StorageTools')
+local storagePlayerAssets = serverStorage:WaitForChild('StoragePlayerAssets')
+local storageUniforms = serverStorage:WaitForChild('StorageUniforms')
+
+-- ReplicatedStorage
+local clientRemotes = replicatedStorage:WaitForChild('ClientRemotes')
+
+---------------------------
+-- M A I N   S C R I P T --
+---------------------------
+
+_G.globalPlayerInfo = {}
+
+-- Set standard groups
+local groupDatabase = {
+	['Administrative Department'] =	{
+		groupId = 3318707, 
+		groupName = '[]SCP[] Administrative Department',
+		weapons = {
+			{'All', 'M9'},
+			{'All', 'Taser'},
+			{'255', 'MinigunTaser.'},
+			{'255', '50Cal.'},
+			{'255', 'HK416-SP'}
+		},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'},
+			{'7', 'boombox'},
+			{'8', 'boombox'},	
+			{'255', 'boombox'},
+		}
+	},
+	['Administrators Task Force'] = {
+		groupId = 3319991, 
+		groupName = '[]SCP[] Administrator\'s Task Force',
+		weapons = {
+			{'All', 'SCAR-SP'},
+			{'All', 'M9'},
+			{'All', 'XR-112'},
+			{'All', 'Taser'},
+			{'255', 'MinigunTaser'}
+			},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'},
+			{'255', 'boombox'},
+			{'8', 'boombox'},
+			}
+	},
+	['Department of External Affairs'] = {
+		groupId = 3319745, 
+		groupName = '[]SCP[] Department of External Matters',
+		weapons = {},
+		tools = {
+			{'255', 'boombox'},
+			{'12', 'boombox'},
+			{'4', 'Detain'},
+			{'8', 'Detain'},
+			{'9', 'Detain'},
+			{'10', 'Detain'},
+			{'11', 'Detain'},
+			{'12', 'Detain'}
+			}
+	},
+	['Ethics Committee'] = {
+		groupId = 3319909, 
+		groupName = '[]SCP[] Ethics Committee',
+		weapons = {},
+		tools = {}
+	},
+	['Foundation Personnel'] = {
+		groupId = 3013484, 
+		groupName = '[]SCP[] Special Containment Procedure Foundation',
+		weapons = {},
+		tools = {
+			{'255', 'boombox'},
+			{'50', 'boombox'},
+			{'255', 'Detain'},
+			{'50', 'Detain'},
+			{'45', 'Detain'},
+		}
+	},
+	['Intelligence Agency'] = {
+		groupId = 3319928, 
+		groupName = '[]SCP[] Intelligence Agency',
+		weapons = {
+			{'All', 'HK412-S'}
+		},
+		tools = {
+			{'All', 'Detain'}
+		}
+	},
+	['?'] = {
+		groupId = 4272888, 
+		groupName = '[]SCP[] █████',
+		weapons = {
+			{'All', 'HK412-SP'}
+		},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'}
+		}
+	},
+	['Internal Security Department'] = {
+		groupId = 3319981, 
+		groupName = '[]SCP[] Internal Security Department',
+		weapons = {
+			{'All', 'HK412-S'}
+		},
+		tools = {
+			{'All', 'Detain'}
+		}
+	},
+	['Rapid Response Team'] = {
+		groupId = 4265351, 
+		groupName = '[]SCP[] Rapid Response Team',
+		weapons = {
+			{'All', 'M4A1-S'}
+			},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'},
+			{'255', 'boombox'},
+			{'10', 'boombox'}
+			}
+	},
+	['Manufacturing Department'] = {
+		groupId = 3319862, 
+		groupName = '[]SCP[] Manufacturing Department',
+		weapons = {
+		},
+		tools = {
+			{'All', 'Detain'},
+		}
+	},
+	['Medical Department'] = {
+		groupId = 3319749, 
+		groupName = '[]SCP[] Medical Department',
+		weapons = {},
+		tools = {
+			--{'All', '[R] Healing Kit'}
+		}
+	},
+	['Mobile Task Force'] = {
+		groupId = 3318713, 
+		groupName = '[]SCP[] Mobile Task Forces',
+		weapons = {
+			{'All', 'M4A1'},
+			{'3', 'M249'},
+			{'4', 'HK416'},
+			{'5', 'SCAR-SP'},
+			{'7', 'M4A1-S'},
+			{'9', 'HK412-S'},
+			{'9', 'XR-112'},
+			{'15', 'HK412-S'},
+			{'15', 'XR-112'},
+			{'16', 'HK412-S'},
+			{'16', 'XR-112'},
+			{'17', 'HK412-S'},
+			{'17', 'XR-112'}
+		},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'},
+			{'255', 'boombox'},
+			{'18', 'boombox'}
+		}
+	},
+	['Scientific Department'] = {
+		groupId = 3318746, 
+		groupName = '[]SCP[] Scientific Department',
+		weapons = {},
+		tools = {}
+	},
+	['Hostiles'] = {
+		groupId = 3318707, 
+		groupName = '',
+		weapons = {
+
+		},
+		tools = {
+
+		}
+	},
+	['Security Department'] = {
+		groupId = 3319864, 
+		groupName = '[]SCP[] Security Department',
+		weapons = {
+			{'All', 'M9'},
+			{'All', 'M4A1'},
+			{'7', 'HK416'},
+			{'8', 'HK416'},
+			{'9', 'HK416'},
+			{'10', 'HK416'},
+			{'11', 'HK416'},
+			{'12', 'HK416'},
+			{'13', 'HK416'},
+			{'14', 'HK416'},
+			{'15', 'HK416'},
+		},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'},
+			{'255', 'boombox'},
+			{'15', 'boombox'}
+		}
+	},
+	['Security Special Operations'] = {
+		groupId = 4265310, 
+		groupName = '[]SCP[] Security Special Operations',
+		weapons = {
+			{'All', 'M9'},
+			{'All', 'HK416-S'},
+			},
+		tools = {
+			{'All', 'Detain'},
+			{'All', 'NVG'},
+			{'255', 'boombox'},
+			{'30', 'boombox'}
+			}
+	},
+	['Engineering and Technical Department'] = {
+		groupId = 3319919, 
+		groupName = '[]SCP[] Engineering & Technical Service Department',
+		weapons = {},
+		tools = {}
+	}
+}
+
+local playerDataStorage = {groups = {}, mainData = {}, gamepassData = {}}
+
+local givePlayerTools = function(player)
+	if player.Team == teams["Joining"] then return end
+	
+	-- Handle Class-D team
+	if player.Team == teams["Class-D"] then
+		
+		if _G.RIOT_ENABLED then
+			storageTools.Weapons:WaitForChild("AK-47"):Clone().Parent = player.Backpack
+		end
+		
+--		if playerDataStorage.gamepassData[player.Name]["Radio Gamepass"] then
+--			storageTools:WaitForChild("Broken Radio"):Clone().Parent = player.Backpack
+--		end
+		
+		 return
+	end
+	
+	if player.Team.Name ~= "Hostiles" then
+		storageTools:WaitForChild("Radio"):Clone().Parent = player.Backpack
+	end
+	
+	-- Handle Weapons
+	for _, weapon in pairs(groupDatabase[player.Team.Name].weapons) do
+		local giveTool = false
+		if weapon[1] == 'All' then
+			-- Global weapon
+			giveTool = true
+		else
+			-- Specific rank weapon
+			if playerDataStorage.groups[player.Name][player.Team.Name].Rank == weapon[1] then
+				giveTool = true
+			end
+		end
+		
+		if giveTool then
+			storageTools.Weapons[weapon[2]]:Clone().Parent = player.Backpack
+		end
+	end
+	
+	-- Handle standard tools
+	for _, tool in pairs(groupDatabase[player.Team.Name].tools) do
+		local giveTool = false
+		if tool[1] == 'All' then
+			-- Global tool
+			giveTool = true
+		else
+			-- Specific rank weapon
+			if playerDataStorage.groups[player.Name][player.Team.Name].Rank == tool[1] then
+				giveTool = true
+			end
+		end
+		
+		if giveTool then
+			local tool = storageTools[tool[2]]:Clone()
+			tool.Parent = player.Backpack
+		end
+	end
+end
+
+local givePlayerOverhead = function(player)
+	
+	local c = game.ServerStorage.StoragePlayerAssets.OverheadGUI.PlayerInfoGUI
+	local role
+	local rank
+	local rankgui = c:Clone()
+	
+	rankgui.Parent = player.Character:FindFirstChild("Head")
+	rankgui.PlayerName.Text = player.Character.Name
+	if player.Team == teams['Class-D'] then
+		rankgui.TeamRole.Text = '[Class-D] | (D-'..math.random(1000, 9999)..')'
+	else
+		role = player:GetRoleInGroup(groupDatabase[player.Team.Name].groupId)
+		rank = player:GetRankInGroup(groupDatabase[player.Team.Name].groupId)
+		rankgui.TeamRole.Text = role
+	end
+	rankgui.PlayerName.TextColor3 = player.Team.TeamColor.Color
+	rankgui.TeamRole.TextColor3 = player.Team.TeamColor.Color
+	if player.Team.Name == "Internal Security Department" or player.Team.Name == "Intelligence Agency" or player.Team.Name == "Rapid Response Team" or player.Team.Name == "Administrators Task Force" or player.Team.Name == "Security Special Operations" or player.Team.Name == "?" then
+		rankgui.PlayerName.Text = "[CLASSIFIED]"
+	elseif player.Team.Name == "Mobile Task Force" then
+		if rank == 6 or rank == 7 or rank == 8 or rank == 9 then
+			rankgui.PlayerName.Text = "[CLASSIFIED]"
+		end
+	end
+	if player.Team.Name == "?" then
+		if rank == 1 or rank == 2 or rank == 3 then
+		rankgui:Destroy()
+	end
+	
+
+end
+end
+
+players.PlayerAdded:Connect(function(player)
+	
+	_G.globalPlayerInfo[player.Name] = {}
+	
+	player.NameDisplayDistance = 0
+	
+	player.CharacterAdded:Connect(function(character)
+		character:WaitForChild("Humanoid").DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		character:WaitForChild('Humanoid').Died:Connect(function()
+			if character:FindFirstChild('UniformPackage') then
+				character.UniformPackage:Destroy()
+			end
+			if character:FindFirstChild('AssetStorage') then
+				character.AssetStorage:Destroy()
+			end
+			wait(10)
+			if player and player.Character then
+				player:LoadCharacter()
+			end
+		end)
+		wait(1)
+		if player.Team.Name ~= "Joining" then
+			givePlayerOverhead(player)
+			if player.Team.Name == "?" then
+				if playerDataStorage.groups[player.Name]["?"].Rank >= 253 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Overseer)
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Regular)
+				end
+			elseif player.Team.Name == "Rapid Response Team" then
+				if playerDataStorage.groups[player.Name]["Rapid Response Team"].Rank >= 17 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].ExecutiveOfficer)
+				elseif playerDataStorage.groups[player.Name]["Rapid Response Team"].Rank >= 5 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Sergeant)
+				elseif playerDataStorage.groups[player.Name]["Rapid Response Team"].Rank >= 4 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Specialist)
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Operative)
+				end
+			elseif player.Team.Name == "Mobile Task Force" then
+				if playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 17 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Overseer)
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 15 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].AssistantDirector)
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 13 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].ExecutiveOfficer)
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 9 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["Tau-5"])
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 8 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["IOTA-10"])
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 7 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["A-1"])
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 5 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["E-11"])
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 4 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["D-5"])
+				elseif playerDataStorage.groups[player.Name]["Mobile Task Force"].Rank >= 3 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["O-9"])
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["O-9"])
+				end
+			elseif player.Team.Name == "Intelligence Agency" then
+				if playerDataStorage.groups[player.Name]["Intelligence Agency"].Rank >= 55 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Overseer)
+				elseif playerDataStorage.groups[player.Name]["Intelligence Agency"].Rank >= 45 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].DIR)
+				elseif playerDataStorage.groups[player.Name]["Intelligence Agency"].Rank == 20 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Redac)
+				elseif playerDataStorage.groups[player.Name]["Intelligence Agency"].Rank >= 5 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Major)
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Regular)
+				end
+			elseif player.Team.Name == "Internal Security Department" then
+				-- ISD Morphs
+				if playerDataStorage.groups[player.Name]["Internal Security Department"].Rank >= 7 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["High Rank"])
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Regular)
+				end
+			elseif player.Team.Name == "Engineering and Technical Department" then
+				if playerDataStorage.groups[player.Name]["Engineering and Technical Department"].Rank >= 1 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Regular)
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Regular)
+				end
+			elseif player.Team.Name == "Security Department" then
+				-- SD Morphs
+				if playerDataStorage.groups[player.Name]["Security Department"].Rank >= 12 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["Assistant Director"])
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank == 11 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Colonel)
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank >= 10 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Major)
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank >= 9 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Captain)
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank == 8 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Lieutenant)
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank == 7 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Officer)
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank == 6 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Sergeant)
+				elseif playerDataStorage.groups[player.Name]["Security Department"].Rank >= 4 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["Field Agent"])
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Recruit)
+				end
+			elseif player.Team.Name == "Administrators Task Force" then
+				if playerDataStorage.groups[player.Name]["Administrators Task Force"].Rank >= 8 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["Overseer Head"])
+				elseif playerDataStorage.groups[player.Name]["Administrators Task Force"].Rank >= 6 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["Executive Officer"])
+				elseif playerDataStorage.groups[player.Name]["Administrators Task Force"].Rank >= 4 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Sergeant)
+				elseif playerDataStorage.groups[player.Name]["Administrators Task Force"].Rank == 3 then
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name]["Black Berrets"])
+				else
+					uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name].Operative)
+				end
+			else
+				uniformAPI.setPlayerUniform(player, storageUniforms[player.Team.Name])
+			end
+			givePlayerTools(player)
+		end
+		end)
+		
+		player.CharacterRemoving:Connect(function()
+		_G.globalPlayerInfo[player.Name] = {}
+		end)
+	
+	repeat wait() until dataStoreAPI
+	
+	player:LoadCharacter()
+	
+	local playerData = {
+		playerCurrency = 0,
+		
+		playerInfo = {rewardTools = {}, rewardWeapons = {}},
+		
+		playerMedals = {},
+		playerExams = {},
+		playerLogs = {punishmentLogs = {warnings = {}, suspensions = {}, blacklists = {}}, eventLogs = {}, purchaseLogs = {}}
+	}
+	
+	playerDataStorage.mainData[player.Name] = playerData
+	playerDataStorage.gamepassData[player.Name] = {}
+	local playerDataStore = dataStoreAPI('PlayerData', player)
+	
+	-- this won't be called if there's no value in the data store.
+	-- for example {1, 2, 3} becomes {'Item1', 'Item2', 'Item3'
+	playerDataStore:BeforeInitialGet(function(playerData)
+		return playerData
+	end)
+	
+	-- whatever this returns is what will be saved into data.
+	-- data such as {'Item1', 'Item2', 'Item3'} become {1, 2, 3}
+	playerDataStore:BeforeSave(function(playerData)
+		return playerData
+	end)
+	
+	-- attempt to get the player's data from the datastore
+	local playerData = playerDataStore:Get(playerData)
+	playerDataStorage.mainData[player.Name] = playerData
+	
+	-- when updated, it will update the following values
+	playerDataStore:OnUpdate(function(playerData)
+		playerDataStorage.mainData[player.Name] = playerData
+	end)
+
+	local success, message = pcall(function()
+		local playerGroups = groupService:GetGroupsAsync(player.UserId)
+		playerDataStorage.groups[player.Name] = {}
+		
+		-- function to determine whether or not they're in the group
+		local isInGroup = function(groupId)
+			for i, v in pairs(playerGroups) do
+				if v.Id == groupId then
+					return v
+				end
+			end
+			return false
+		end
+		
+		-- go through all their groups and see if it's one of ours
+		for groupName, group in pairs(groupDatabase) do
+			local group = isInGroup(group.groupId)
+			if group then
+				if groupName == 'Foundation Personnel' then
+					if group.Rank >= 7 then -- make sure they're not class-d/e
+						playerDataStorage.groups[player.Name][groupName] = group
+					end
+				else
+					playerDataStorage.groups[player.Name][groupName] = group
+				end
+			end
+		end
+		isInGroup = nil -- remove function for memory ;)
+	end)
+	
+	if not success then
+		warn(message)
+		wait(7)
+		--clientRemotes.SnackbarAlert:FireClient(player, 'Group data may be corrupted. You may have to rejoin.')
+	end
+end)	
+	
+players.PlayerRemoving:Connect(function(player)
+	playerDataStorage.groups[player.Name] = nil
+	playerDataStorage.gamepassData[player.Name] = nil
+	playerDataStorage.mainData[player.Name] = nil
+end)
+
+local returnPlayerData = function(player, dataType)
+	if dataType == 'MainData' then
+		repeat wait() until playerDataStorage.mainData[player.Name] ~= nil
+		return playerDataStorage.mainData[player.Name]
+	elseif dataType == 'Groups' then
+		repeat wait() until playerDataStorage.groups[player.Name] ~= nil
+		return playerDataStorage.groups[player.Name]
+	elseif dataType == 'Gamepass' then
+		repeat wait() until playerDataStorage.gamepassData[player.Name] ~= nil
+		return playerDataStorage.gamepassData[player.Name]
+	end
+	return nil
+end
+
+
+
+clientRemotes.GetPlayerData.OnServerInvoke = returnPlayerData
+serverEvents.GetPlayerData.OnInvoke = returnPlayerData
+
+clientRemotes.TeamSwitch.OnServerInvoke = function(client, teamName)
+	if teamName == "Joining" then
+		client.Team = teams["Joining"]
+		client:LoadCharacter()
+		return true
+	end
+	local role = playerDataStorage.groups[client.Name]["Foundation Personnel"]
+	if teamName == 'Class-D' and role.Rank <= 255 then
+		client.Team = teams["Class-D"]
+		client:LoadCharacter()
+		return true
+	end
+	
+	if teamName == 'Hostiles' then
+		client.Team = teams[teamName]
+		client:LoadCharacter()
+		return true
+	end
+	
+	local role = playerDataStorage.groups[client.Name][teamName]
+	if role--[[ and role.Rank ~= 1 --]]then
+		client.Team = teams[teamName]
+		client:LoadCharacter()
+		return true
+	end
+end
